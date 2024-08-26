@@ -4,6 +4,7 @@ import asyncio
 import argparse
 from itertools import cycle
 
+from bot.utils.bulat_utils import get_proxies_with_clients
 from pyrogram import Client, compose
 from better_proxy import Proxy
 
@@ -79,7 +80,7 @@ async def process() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--action", type=int, help="Action to perform")
 
-    logger.info(f"Detected {len(get_session_names())} sessions | {len(get_proxies())} proxies")
+    # logger.info(f"Detected {len(get_session_names())} sessions | {len(get_proxies())} proxies")
 
     action = parser.parse_args().action
 
@@ -106,16 +107,16 @@ async def process() -> None:
 
 
 async def run_tasks(tg_clients: list[Client]):
-    proxies = get_proxies()
-    proxies_cycle = cycle(proxies) if proxies else None
+    client_proxy_list = get_proxies_with_clients(tg_clients)
+
     tasks = [
         asyncio.create_task(
             run_tapper(
-                tg_client=tg_client,
-                proxy=next(proxies_cycle) if proxies_cycle else None,
+                tg_client=pair[0],
+                proxy=pair[1].as_url,
             )
         )
-        for tg_client in tg_clients
+        for pair in client_proxy_list
     ]
 
     await asyncio.gather(*tasks)
